@@ -34,11 +34,41 @@ CORS(app)
 # Security: Require API key for all endpoints
 API_KEY = os.getenv("API_KEY", "change-me-in-production")
 
-# Initialize InsightFace model (once at startup)
-logger.info("Loading InsightFace model...")
-face_app = FaceAnalysis(providers=['CPUExecutionProvider'])
-face_app.prepare(ctx_id=0, det_size=(640, 640))
-logger.info("✓ InsightFace model loaded successfully!")
+# Global model variable - will be loaded on first request
+face_app = None
+model_loading = False
+model_loaded = False
+
+
+def get_face_app():
+    """
+    Lazy load InsightFace model on first request
+    This allows the server to start quickly and respond to health checks
+    """
+    global face_app, model_loading, model_loaded
+
+    if model_loaded:
+        return face_app
+
+    if model_loading:
+        # Wait for model to finish loading (up to 120 seconds)
+        import time
+        for _ in range(120):
+            if model_loaded:
+                return face_app
+            time.sleep(1)
+        raise Exception("Model loading timeout")
+
+    # Start loading model
+    model_loading = True
+    logger.info("Loading InsightFace model (this may take 30-60 seconds)...")
+    face_app = FaceAnalysis(providers=['CPUExecutionProvider'])
+    face_app.prepare(ctx_id=0, det_size=(640, 640))
+    model_loaded = True
+    model_loading = False
+    logger.info("✓ InsightFace model loaded successfully!")
+
+    return face_app
 
 
 def verify_api_key():
@@ -73,6 +103,8 @@ def health_check():
     return jsonify({
         "status": "healthy",
         "model": "insightface",
+        "model_loaded": model_loaded,
+        "model_loading": model_loading,
         "version": "1.0.0"
     })
 
@@ -126,8 +158,11 @@ def extract_embedding():
         if img is None:
             return jsonify({"error": "Invalid image format"}), 400
 
+        # Get face detection model (lazy load on first call)
+        face_detector = get_face_app()
+
         # Detect faces in image
-        faces = face_app.get(img)
+        faces = face_detector.get(img)
 
         if len(faces) == 0:
             logger.warning("No face detected in image")
@@ -257,8 +292,11 @@ def batch_extract_embeddings():
                 nparr = np.frombuffer(img_data, np.uint8)
                 img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
 
+                # Get face detection model (lazy load on first call)
+                face_detector = get_face_app()
+
                 # Detect faces
-                faces = face_app.get(img)
+                faces = face_detector.get(img)
 
                 if len(faces) == 0:
                     results.append({
