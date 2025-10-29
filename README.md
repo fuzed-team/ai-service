@@ -139,8 +139,8 @@ curl http://localhost:5000/health
 
 # Extract embedding (replace with your API key)
 curl -X POST http://localhost:5000/extract-embedding \
-  -H "Authorization: Bearer your-api-key" \
-  -F "file=@test_face.jpg"
+  -H "Authorization: Bearer your-secure-api-key" \
+  -F "file=@OIP.webp"
 ```
 
 ## Docker Deployment
