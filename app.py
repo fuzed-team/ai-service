@@ -6,8 +6,10 @@ This service is called by Next.js API routes for AI-powered face matching.
 
 Endpoints:
     GET  /health - Health check
+    POST /verify-face - Verify if face is detected in image
     POST /extract-embedding - Extract face embedding from image
     POST /compare-faces - Compare two face embeddings
+    POST /batch-extract - Batch extract embeddings from multiple images
 """
 
 from flask import Flask, request, jsonify
@@ -186,6 +188,85 @@ def extract_embedding():
 
     except Exception as e:
         logger.error(f"Error extracting embedding: {str(e)}", exc_info=True)
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/verify-face', methods=['POST'])
+def verify_face():
+    """
+    Verify if a face is detected in an image (without extracting embedding)
+
+    Request formats:
+        1. Multipart form data with 'file' field (JPEG, PNG)
+        2. JSON with 'image_base64' field (base64-encoded image)
+
+    Response:
+        {
+            "face_detected": true,
+            "confidence": 0.99,
+            "bbox": [x, y, width, height],
+            "message": "Face detected successfully"
+        }
+
+    Error Response:
+        {
+            "face_detected": false,
+            "error": "No face detected in image"
+        }
+    """
+    # Verify API key
+    if not verify_api_key():
+        return jsonify({"error": "Unauthorized"}), 401
+
+    try:
+        # Handle multipart file upload
+        if 'file' in request.files:
+            file = request.files['file']
+            img_bytes = file.read()
+            nparr = np.frombuffer(img_bytes, np.uint8)
+            img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+            logger.info(f"Verifying face in uploaded file: {file.filename}")
+
+        # Handle base64 image
+        elif request.json and 'image_base64' in request.json:
+            img_data = base64.b64decode(request.json['image_base64'])
+            nparr = np.frombuffer(img_data, np.uint8)
+            img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+            logger.info("Verifying face in base64 image")
+
+        else:
+            return jsonify({"error": "No image provided"}), 400
+
+        if img is None:
+            return jsonify({"error": "Invalid image format"}), 400
+
+        # Get face detection model (lazy load on first call)
+        face_detector = get_face_app()
+
+        # Detect faces in image
+        faces = face_detector.get(img)
+
+        if len(faces) == 0:
+            logger.warning("No face detected in image")
+            return jsonify({
+                "face_detected": False,
+                "error": "No face detected in image"
+            }), 400
+
+        # Use first detected face (highest confidence)
+        face = faces[0]
+
+        logger.info(f"✓ Face verified with confidence: {face.det_score:.3f}")
+
+        return jsonify({
+            "face_detected": True,
+            "confidence": float(face.det_score),
+            "bbox": face.bbox.tolist(),
+            "message": "Face detected successfully"
+        })
+
+    except Exception as e:
+        logger.error(f"Error verifying face: {str(e)}", exc_info=True)
         return jsonify({"error": str(e)}), 500
 
 

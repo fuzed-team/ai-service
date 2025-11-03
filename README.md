@@ -4,6 +4,7 @@ Minimal Flask API for face embedding extraction using InsightFace. This service 
 
 ## Features
 
+- ✅ **Face Detection Verification** - Quick check if face exists in image
 - ✅ **Face Embedding Extraction** - 512D embeddings from InsightFace
 - ✅ **Face Comparison** - Cosine similarity between embeddings
 - ✅ **Batch Processing** - Process multiple images at once
@@ -22,6 +23,44 @@ Health check endpoint
   "status": "healthy",
   "model": "insightface",
   "version": "1.0.0"
+}
+```
+
+### `POST /verify-face`
+Verify if a face is detected in an image (lightweight, no embedding extraction)
+
+**Request (multipart/form-data):**
+```bash
+curl -X POST http://localhost:5000/verify-face \
+  -H "Authorization: Bearer your-api-key" \
+  -F "file=@face.jpg"
+```
+
+**Request (JSON with base64):**
+```bash
+curl -X POST http://localhost:5000/verify-face \
+  -H "Authorization: Bearer your-api-key" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "image_base64": "base64_encoded_image_data"
+  }'
+```
+
+**Success Response:**
+```json
+{
+  "face_detected": true,
+  "confidence": 0.99,
+  "bbox": [100, 150, 200, 250],
+  "message": "Face detected successfully"
+}
+```
+
+**Error Response:**
+```json
+{
+  "face_detected": false,
+  "error": "No face detected in image"
 }
 ```
 
@@ -162,111 +201,6 @@ docker run -p 5000:5000 -e API_KEY="your-secure-api-key" ai-face-service
 ```bash
 curl http://localhost:5000/health
 ```
-
-## Production Deployment
-
-### Option 1: Render (Recommended - Best Free Tier)
-
-1. Push code to GitHub:
-   ```bash
-   git init
-   git add .
-   git commit -m "Initial commit"
-   git push origin main
-   ```
-
-2. Deploy on Render:
-   - Go to [Render Dashboard](https://dashboard.render.com/)
-   - Click **"New"** → **"Blueprint"**
-   - Connect your GitHub repository
-   - Render auto-detects `render.yaml`
-   - Click **"Apply"**
-
-3. Get deployment URL and API key from Render dashboard
-
-**Cost:** Free tier (750h/month) → $7/month for always-on
-
-**See:** [RENDER_DEPLOYMENT.md](./RENDER_DEPLOYMENT.md) for detailed guide
-
-### Option 2: Railway (Easy Alternative)
-
-1. Install Railway CLI:
-   ```bash
-   npm install -g railway
-   ```
-
-2. Login and deploy:
-   ```bash
-   railway login
-   railway init
-   railway up
-   ```
-
-3. Set environment variables in Railway dashboard:
-   - `API_KEY` - Your secure API key
-   - `PORT` - 8000 (Railway auto-assigns)
-
-4. Get deployment URL from Railway dashboard
-
-**Cost:** Free tier ($5/month credit) → ~$5-10/month for production
-
-### Option 2: Fly.io (Good Performance)
-
-1. Install flyctl:
-   ```bash
-   curl -L https://fly.io/install.sh | sh
-   ```
-
-2. Create `fly.toml`:
-   ```toml
-   app = "ai-face-service"
-
-   [build]
-     dockerfile = "Dockerfile"
-
-   [[services]]
-     internal_port = 8000
-     protocol = "tcp"
-
-     [[services.ports]]
-       port = 80
-       handlers = ["http"]
-
-     [[services.ports]]
-       port = 443
-       handlers = ["tls", "http"]
-
-   [env]
-     PORT = "8000"
-   ```
-
-3. Deploy:
-   ```bash
-   fly launch
-   fly secrets set API_KEY="your-api-key"
-   fly deploy
-   ```
-
-**Cost:** Free tier (3GB RAM) → ~$0-5/month
-
-### Option 3: Google Cloud Run (Serverless)
-
-1. Build and push image:
-   ```bash
-   gcloud builds submit --tag gcr.io/PROJECT_ID/ai-face-service
-   ```
-
-2. Deploy:
-   ```bash
-   gcloud run deploy ai-face-service \
-     --image gcr.io/PROJECT_ID/ai-face-service \
-     --platform managed \
-     --region us-central1 \
-     --allow-unauthenticated \
-     --set-env-vars API_KEY="your-api-key"
-   ```
-
-**Cost:** Pay-per-request, ~$0-10/month for low traffic
 
 ## Environment Variables
 
