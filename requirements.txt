@@ -12,5 +12,10 @@ onnxruntime==1.17.1
 opencv-python-headless==4.8.1.78
 numpy==1.24.3
 
+# NEW: Advanced facial analysis
+deepface==0.0.79
+scikit-learn==1.3.2
+scipy==1.11.4
+
 # Production server (optional)
 gunicorn==21.2.0
