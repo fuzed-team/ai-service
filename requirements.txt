@@ -1,16 +1,24 @@
 # Python AI Microservice - Dependencies
 
 # Web framework
-Flask==3.0.0
-flask-cors==4.0.0
+Flask==3.1.2
+flask-cors==6.0.1
 
 # Face recognition
 insightface==0.7.3
-onnxruntime==1.17.1
+onnxruntime==1.23.2
 
 # Image processing
-opencv-python-headless==4.8.1.78
-numpy==1.24.3
+opencv-python-headless==4.10.0.84
+numpy==1.26.4
+protobuf==3.20.3
+
+# NEW: Advanced facial analysis
+deepface==0.0.95
+tensorflow==2.15.0
+tf-keras==2.15.0
+scikit-learn==1.7.2
+scipy==1.16.3
 
 # Production server (optional)
-gunicorn==21.2.0
+gunicorn==23.0.0
