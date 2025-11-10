@@ -1,0 +1,36 @@
+[project]
+name = "ai-face-matching-service"
+version = "1.0.0"
+description = "FastAPI service for AI-powered face detection, verification, and analysis"
+requires-python = ">=3.11,<3.12"
+dependencies = [
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.32.0",
+    "python-multipart>=0.0.9",
+    "insightface==0.7.3",
+    "onnxruntime==1.23.2",
+    "opencv-python-headless==4.10.0.84",
+    "numpy==1.26.4",
+    "protobuf==3.20.3",
+    "deepface==0.0.95",
+    "scikit-learn==1.7.2",
+    "scipy==1.16.3",
+    "pydantic>=2.0.0",
+    "pydantic-settings>=2.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "ruff>=0.8.0",
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.24.0",
+    "httpx>=0.28.0",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W", "UP"]
+

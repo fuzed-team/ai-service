@@ -1,0 +1,26 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:github.com)",
+      "Bash(uv init:*)",
+      "Bash(uv sync:*)",
+      "Bash(uv venv:*)",
+      "Bash(uv pip install:*)",
+      "Bash(cat:*)",
+      "Bash(app/__init__.py)",
+      "Bash(app/core/__init__.py)",
+      "Bash(app/models/__init__.py)",
+      "Bash(app/services/__init__.py)",
+      "Bash(app/workers/__init__.py)",
+      "Bash(app/api/__init__.py)",
+      "Bash(app/api/v1/__init__.py)",
+      "Bash(app/api/v1/endpoints/__init__.py)",
+      "Bash(tree:*)",
+      "Bash(findstr:*)",
+      "Bash(dir:*)",
+      "Bash(nul)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

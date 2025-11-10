@@ -1,50 +1,55 @@
-# Python AI Microservice - Face Recognition API
+# FastAPI AI Microservice - Face Recognition API
 
-Minimal Flask API for face embedding extraction using InsightFace. This service is called by Next.js API routes for AI-powered face matching.
+**FastAPI-based** AI service for face embedding extraction using InsightFace and DeepFace. This service provides comprehensive face detection, analysis, and matching capabilities.
+
+> **⚠️ Migration Notice**: This service has been migrated from Flask to FastAPI. See [MIGRATION.md](MIGRATION.md) for details.
 
 ## Features
 
 - ✅ **Face Detection Verification** - Quick check if face exists in image
 - ✅ **Face Embedding Extraction** - 512D embeddings from InsightFace
 - ✅ **Face Comparison** - Cosine similarity between embeddings
+- ✅ **Advanced Face Analysis** - Age, gender, emotions, quality metrics, geometry
 - ✅ **Batch Processing** - Process multiple images at once
-- ✅ **API Key Authentication** - Secure endpoint access
-- ✅ **Docker Support** - Ready for containerized deployment
-- ✅ **Production Ready** - Gunicorn server with health checks
+- ✅ **API Key Authentication** - Secure Bearer token authentication
+- ✅ **Docker Support** - Multi-stage optimized builds
+- ✅ **Production Ready** - Uvicorn ASGI server with process pool
+- ✅ **Auto-Generated Docs** - Interactive API docs at `/docs`
+- ✅ **Type Safety** - Full Pydantic validation
+- ✅ **Async Architecture** - Non-blocking ML inference
+
+## Quick Start
+
+### Interactive API Documentation
+Visit http://localhost:8000/docs for interactive Swagger UI to test all endpoints.
 
 ## API Endpoints
 
-### `GET /health`
-Health check endpoint
+> **Base URL**: All endpoints are prefixed with `/api/v1`
+
+### `GET /api/v1/health`
+Health check endpoint (no authentication required)
 
 **Response:**
 ```json
 {
   "status": "healthy",
   "model": "insightface",
+  "model_loaded": true,
   "version": "1.0.0"
 }
 ```
 
-### `POST /verify-face`
+### `POST /api/v1/verify-face`
 Verify if a face is detected in an image (lightweight, no embedding extraction)
 
 **Request (multipart/form-data):**
 ```bash
-curl -X POST http://localhost:5000/verify-face \
+curl -X POST http://localhost:8000/api/v1/verify-face \
   -H "Authorization: Bearer your-api-key" \
   -F "file=@face.jpg"
 ```
 
-**Request (JSON with base64):**
-```bash
-curl -X POST http://localhost:5000/verify-face \
-  -H "Authorization: Bearer your-api-key" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "image_base64": "base64_encoded_image_data"
-  }'
-```
 
 **Success Response:**
 ```json
@@ -64,24 +69,19 @@ curl -X POST http://localhost:5000/verify-face \
 }
 ```
 
-### `POST /extract-embedding`
+### `POST /api/v1/extract-embedding`
 Extract face embedding from image
 
-**Request (multipart/form-data):**
+**Request (multipart or form data):**
 ```bash
-curl -X POST http://localhost:5000/extract-embedding \
+curl -X POST http://localhost:8000/api/v1/extract-embedding \
   -H "Authorization: Bearer your-api-key" \
   -F "file=@face.jpg"
-```
 
-**Request (JSON with base64):**
-```bash
-curl -X POST http://localhost:5000/extract-embedding \
+# Or with base64
+curl -X POST http://localhost:8000/api/v1/extract-embedding \
   -H "Authorization: Bearer your-api-key" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "image_base64": "base64_encoded_image_data"
-  }'
+  -F "image_base64=data:image/jpeg;base64,/9j/4AAQ..."
 ```
 
 **Response:**
@@ -94,12 +94,12 @@ curl -X POST http://localhost:5000/extract-embedding \
 }
 ```
 
-### `POST /compare-faces`
+### `POST /api/v1/compare-faces`
 Compare two face embeddings
 
 **Request:**
 ```bash
-curl -X POST http://localhost:5000/compare-faces \
+curl -X POST http://localhost:8000/api/v1/compare-faces \
   -H "Authorization: Bearer your-api-key" \
   -H "Content-Type: application/json" \
   -d '{
@@ -116,8 +116,8 @@ curl -X POST http://localhost:5000/compare-faces \
 }
 ```
 
-### `POST /batch-extract`
-Extract embeddings from multiple images
+### `POST /api/v1/batch-extract`
+Extract embeddings from multiple images (up to 50)
 
 **Request:**
 ```json
@@ -146,38 +146,69 @@ Extract embeddings from multiple images
 }
 ```
 
+### `POST /api/v1/analyze-face-advanced`
+**NEW**: Extract comprehensive facial attributes including age, gender, emotions, quality metrics, symmetry, skin tone, and geometry
+
+**Request:**
+```bash
+curl -X POST http://localhost:8000/api/v1/analyze-face-advanced \
+  -H "Authorization: Bearer your-api-key" \
+  -F "file=@face.jpg"
+```
+
+**Response includes**: embedding, age, gender, emotions, pose, quality scores, symmetry, skin tone, facial geometry ratios
+
 ## Local Development
 
 ### Prerequisites
 
-- Python 3.11+
-- pip
+- Python 3.11
+- UV package manager ([installation guide](https://github.com/astral-sh/uv))
+- Docker (recommended for Windows users due to TensorFlow dependencies)
 
-### Setup
+### Setup with Docker (Recommended)
 
 ```bash
-# Install dependencies
-pip install -r requirements.txt
+# 1. Copy environment template
+cp .env.example .env
 
-# Set environment variables
-export API_KEY="your-secure-api-key"
-export PORT=8000
-export DEBUG=True
+# 2. Edit .env and set your API_KEY
+nano .env
 
-# Run server
-python app.py
+# 3. Build and run with Docker
+docker build -t ai-face-service .
+docker run -p 8000:8000 -e API_KEY=your-api-key ai-face-service
 ```
 
-Server will start at `http://localhost:5000`
+### Setup with UV (Linux/macOS)
+
+```bash
+# 1. Copy environment template
+cp .env.example .env
+
+# 2. Edit .env and set your API_KEY
+nano .env
+
+# 3. Install dependencies with UV
+uv sync
+
+# 4. Run development server
+uv run uvicorn app.main:app --reload --port 8000
+```
+
+Server will start at `http://localhost:8000`
 
 ### Test Endpoints
 
 ```bash
 # Health check
-curl http://localhost:5000/health
+curl http://localhost:8000/api/v1/health
 
-# Extract embedding (replace with your API key)
-curl -X POST http://localhost:5000/extract-embedding \
+# Interactive API docs (open in browser)
+open http://localhost:8000/docs
+
+# Extract embedding
+curl -X POST http://localhost:8000/api/v1/extract-embedding \
   -H "Authorization: Bearer your-api-key" \
   -F "file=@test_face.jpg"
 ```
@@ -193,22 +224,34 @@ docker build -t ai-face-service .
 ### Run Container
 
 ```bash
-docker run -p 5000:5000 -e API_KEY="your-secure-api-key" ai-face-service
+docker run -p 8000:8000 \
+  -e API_KEY="your-secure-api-key" \
+  -e CORS_ORIGINS="http://localhost:3000" \
+  ai-face-service
 ```
 
 ### Test
 
 ```bash
-curl http://localhost:5000/health
+# Health check
+curl http://localhost:8000/api/v1/health
+
+# API docs
+open http://localhost:8000/docs
 ```
 
 ## Environment Variables
 
 | Variable | Description | Required | Default |
 |----------|-------------|----------|---------|
-| `API_KEY` | API key for authentication | Yes | `change-me-in-production` |
+| `API_KEY` | API key for authentication | Yes | - |
 | `PORT` | Server port | No | `8000` |
 | `DEBUG` | Enable debug mode | No | `False` |
+| `CORS_ORIGINS` | Allowed CORS origins (comma-separated) | No | `http://localhost:3000` |
+| `MAX_WORKERS` | Process pool workers for ML | No | `2` |
+| `FACE_DET_THRESH` | Face detection threshold | No | `0.5` |
+
+See `.env.example` for complete configuration.
 
 ## Security
 
@@ -256,7 +299,7 @@ PYTHON_AI_SERVICE_API_KEY=your-api-key
 ### Health Checks
 
 ```bash
-curl https://your-service.railway.app/health
+curl https://your-service.railway.app/api/v1/health
 ```
 
 ### Logs
@@ -300,30 +343,34 @@ docker logs <container-id>
 ### Project Structure
 
 ```
-python-ai-service/
-├── app.py              # Main Flask application
-├── requirements.txt    # Python dependencies
-├── Dockerfile          # Container image
-├── .env.example        # Environment template
-├── .dockerignore       # Docker ignore rules
-└── README.md           # This file
+ai-service/
+├── app/
+│   ├── main.py                      # FastAPI app initialization
+│   ├── core/                        # Core utilities
+│   │   ├── config.py                # Settings & configuration
+│   │   ├── security.py              # Authentication
+│   │   └── exceptions.py            # Exception handlers
+│   ├── api/v1/                      # API version 1
+│   │   ├── endpoints/               # Route handlers
+│   │   └── router.py                # Router setup
+│   ├── models/                      # Pydantic models
+│   ├── services/                    # Business logic
+│   └── workers/                     # ML worker pool
+├── pyproject.toml                   # UV project config & dependencies
+├── Dockerfile                       # Multi-stage build with UV
+├── MIGRATION.md                     # Migration guide
+└── README.md                        # This file
 ```
 
 ### Adding New Endpoints
 
-1. Add route in `app.py`:
-   ```python
-   @app.route('/new-endpoint', methods=['POST'])
-   def new_endpoint():
-       if not verify_api_key():
-           return jsonify({"error": "Unauthorized"}), 401
-       # Your logic here
-       return jsonify({"result": "success"})
-   ```
+1. Create Pydantic models in `app/models/`
+2. Add business logic in `app/services/`
+3. Create endpoint in `app/api/v1/endpoints/`
+4. Register router in `app/api/v1/router.py`
+5. Test at http://localhost:8000/docs
 
-2. Update README with endpoint documentation
-
-3. Test locally before deploying
+See existing endpoints for examples.
 
 ## Next Steps
 
@@ -333,14 +380,42 @@ python-ai-service/
 4. Implement Next.js API routes that call this service
 5. Test face upload flow end-to-end
 
+## Architecture Highlights
+
+### FastAPI Best Practices
+- ✅ Domain-based modular structure
+- ✅ Pydantic BaseSettings for configuration
+- ✅ Dependency injection for auth & services
+- ✅ Process pool for CPU-intensive ML tasks
+- ✅ Comprehensive error handling
+- ✅ Type hints throughout
+
+### Performance
+- **Async Architecture**: Non-blocking API operations
+- **Process Pool**: ML inference doesn't block event loop
+- **Multi-stage Docker**: Optimized build layers
+- **UV Package Manager**: 10-100x faster than pip
+
+## Migration from Flask
+
+This service was migrated from Flask to FastAPI on 2025-11-09. Key changes:
+- **Port**: 5000 → 8000
+- **Base URL**: `/` → `/api/v1/`
+- **Server**: Gunicorn → Uvicorn
+- **Architecture**: Monolithic → Modular
+
+See [MIGRATION.md](MIGRATION.md) for complete migration details.
+
 ## Resources
 
+- [FastAPI Documentation](https://fastapi.tiangolo.com/)
 - [InsightFace Documentation](https://github.com/deepinsight/insightface)
-- [Flask Documentation](https://flask.palletsprojects.com/)
+- [DeepFace Documentation](https://github.com/serengil/deepface)
+- [UV Package Manager](https://github.com/astral-sh/uv)
 - [Railway Documentation](https://docs.railway.app/)
-- [Fly.io Documentation](https://fly.io/docs/)
 
 ---
 
 **Created:** 2025-10-27
-**Status:** ✅ Ready for deployment
+**Migrated to FastAPI:** 2025-11-09
+**Status:** ✅ Production Ready
